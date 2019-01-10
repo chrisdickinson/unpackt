@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use crate::errors::{ Result, ErrorKind };
 
 use syntect::{
-    highlighting::{ThemeSet, Style},
+    highlighting::{ ThemeSet, Theme, Style },
     parsing::SyntaxSet,
     html::highlighted_html_for_string
 };
@@ -51,10 +51,10 @@ lazy_static! {
     };
 }
 
-struct Client {
+struct Client<'a> {
     client: reqwest::Client,
     syntax_set: SyntaxSet,
-    theme_set: ThemeSet
+    theme: &'a Theme
 }
 
 fn get_from_registry(client: &Client, name: &str, version: &str) -> Result<HashMap<String, String>> {
@@ -110,7 +110,7 @@ fn get_from_registry(client: &Client, name: &str, version: &str) -> Result<HashM
                         input.as_str(),
                         &client.syntax_set,
                         &syntax,
-                        &client.theme_set.themes["base16-eighties.dark"]
+                        &client.theme
                     );
                     Some((path.to_string_lossy().into_owned(), output))
                 }
@@ -120,32 +120,18 @@ fn get_from_registry(client: &Client, name: &str, version: &str) -> Result<HashM
     Ok(results)
 }
 
-fn read_highlighted<R: std::io::Read>(client: &Client, entry: &mut Entry<R>, ext: &str) -> Result<Option<Vec<u8>>> {
-
-    let mut buffer = String::new();
-    entry.read_to_string(&mut buffer);
-    let syntax = match client.syntax_set.find_syntax_by_extension(ext) {
-        Some(xs) => xs,
-        None => return Ok(None)
-    };
-
-    let output = highlighted_html_for_string(
-        buffer.as_str(),
-        &client.syntax_set,
-        &syntax,
-        &client.theme_set.themes["base16-eighties.dark"]
+fn main() {
+    let mut theme_bytes = std::io::Cursor::new(
+        include_bytes!("./inspiredgithub.tmTheme") as &[u8]
     );
 
-    println!("{}", output);
-    Ok(Some(output.into_bytes()))
-}
-
-fn main() {
+    let theme = ThemeSet::load_from_reader(&mut theme_bytes).expect("failed to read theme");
     let client = Client {
         client: reqwest::Client::new(),
         syntax_set: SyntaxSet::load_defaults_newlines(),
-        theme_set: ThemeSet::load_defaults()
+        theme: &theme
     };
+
     client.syntax_set.find_syntax_by_extension("js");
     let args: Vec<String> = std::env::args().collect();
     let (package, version) = if args.len() < 3 {
