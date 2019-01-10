@@ -1,0 +1,19 @@
+[package]
+name = "unpackt"
+version = "0.1.0"
+authors = ["Chris Dickinson <christopher.s.dickinson@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+tar = "0.4.20"
+serde = "*"
+serde_derive = "*"
+syntect = "3.0.2"
+lambda_runtime = "*"
+reqwest = "*"
+error-chain = "*"
+lazy_static = "*"
+comrak = "0.4.0"
+flate2 = "1.0.6"
+rayon = "1.0.3"
+serde_json = "*"
